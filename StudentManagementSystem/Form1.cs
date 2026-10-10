@@ -16,6 +16,11 @@ namespace StudentManagementSystem
 
         private void Form1_Load(object sender, EventArgs e)
         {
+            
+            dgvStudents.CellClick += dgvStudents_CellClick;
+            btnUpdate.Click += btnUpdate_Click;
+            btnDelete.Click += btnDelete_Click;
+
             LoadData();
         }
 
@@ -98,7 +103,7 @@ namespace StudentManagementSystem
             {
                 using (var conn = new OleDbConnection(connStr))
                 using (var cmd = new OleDbCommand(
-                   "INSERT INTO [StudentInfo] ([Name], [Roll_number], [Section], [Age], [Address], [Phone_number]) VALUES (?, ?, ?, ?, ?, ?)", conn))
+                    "INSERT INTO [StudentInfo] ([Name], [Roll_number], [Section], [Age], [Address], [Phone_number]) VALUES (?, ?, ?, ?, ?, ?)", conn))
                 {
                     cmd.Parameters.AddWithValue("@Name", txtName.Text.Trim());
                     cmd.Parameters.AddWithValue("@Roll_number", txtRoll.Text.Trim());
@@ -118,6 +123,90 @@ namespace StudentManagementSystem
             catch (Exception ex)
             {
                 MessageBox.Show("Error adding student: " + ex.Message);
+            }
+        }
+
+        private void dgvStudents_CellClick(object sender, DataGridViewCellEventArgs e)
+        {
+            if (e.RowIndex < 0) return;
+
+            DataGridViewRow row = dgvStudents.Rows[e.RowIndex];
+            selectedID = Convert.ToInt32(row.Cells["ID"].Value);
+            txtName.Text = row.Cells["Name"].Value.ToString();
+            txtRoll.Text = row.Cells["Roll_number"].Value.ToString();
+            txtSection.Text = row.Cells["Section"].Value.ToString();
+            txtAge.Text = row.Cells["Age"].Value.ToString();
+            txtAddress.Text = row.Cells["Address"].Value.ToString();
+            txtPhone.Text = row.Cells["Phone_number"].Value.ToString();
+        }
+
+        private void btnUpdate_Click(object sender, EventArgs e)
+        {
+            if (selectedID == -1)
+            {
+                MessageBox.Show("Please select a student from the table first.");
+                return;
+            }
+            if (!ValidateInputs()) return;
+
+            try
+            {
+                using (var conn = new OleDbConnection(connStr))
+                using (var cmd = new OleDbCommand(
+                    "UPDATE [StudentInfo] SET [Name]=?, [Roll_number]=?, [Section]=?, [Age]=?, [Address]=?, [Phone_number]=? WHERE [ID]=?", conn))
+                {
+                    cmd.Parameters.AddWithValue("@Name", txtName.Text.Trim());
+                    cmd.Parameters.AddWithValue("@Roll_number", txtRoll.Text.Trim());
+                    cmd.Parameters.AddWithValue("@Section", txtSection.Text.Trim());
+                    cmd.Parameters.AddWithValue("@Age", int.Parse(txtAge.Text));
+                    cmd.Parameters.AddWithValue("@Address", txtAddress.Text.Trim());
+                    cmd.Parameters.AddWithValue("@Phone_number", txtPhone.Text.Trim());
+                    cmd.Parameters.AddWithValue("@ID", selectedID);
+
+                    conn.Open();
+                    cmd.ExecuteNonQuery();
+                }
+
+                MessageBox.Show("Student updated successfully.");
+                LoadData();
+                ClearFields();
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Error updating student: " + ex.Message);
+            }
+        }
+
+        private void btnDelete_Click(object sender, EventArgs e)
+        {
+            if (selectedID == -1)
+            {
+                MessageBox.Show("Please select a student from the table first.");
+                return;
+            }
+
+            DialogResult result = MessageBox.Show(
+                "Are you sure you want to delete this student?",
+                "Confirm Delete", MessageBoxButtons.YesNo, MessageBoxIcon.Warning);
+            if (result != DialogResult.Yes) return;
+
+            try
+            {
+                using (var conn = new OleDbConnection(connStr))
+                using (var cmd = new OleDbCommand("DELETE FROM [StudentInfo] WHERE [ID]=?", conn))
+                {
+                    cmd.Parameters.AddWithValue("@ID", selectedID);
+                    conn.Open();
+                    cmd.ExecuteNonQuery();
+                }
+
+                MessageBox.Show("Student deleted successfully.");
+                LoadData();
+                ClearFields();
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Error deleting student: " + ex.Message);
             }
         }
     }
